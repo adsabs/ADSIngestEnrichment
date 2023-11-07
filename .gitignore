@@ -132,3 +132,5 @@ dmypy.json
 /references
 *.json
 *.xml
+local_config.py
+.pre-commit-config.yaml

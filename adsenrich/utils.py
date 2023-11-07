@@ -1,10 +1,13 @@
-import sys
-import unidecode
-import requests
 import json
+import sys
+
+import requests
+import unidecode
+
 
 class UnicodeDecodeError(Exception):
     pass
+
 
 def u2asc(input):
     """
@@ -23,22 +26,26 @@ def u2asc(input):
 
     if not isinstance(input, test_type):
         try:
-            input = input.decode('utf-8')
+            input = input.decode("utf-8")
         except UnicodeDecodeError:
-            raise UnicodeHandlerError('Input must be either unicode or encoded in utf8.')
+            raise UnicodeHandlerError("Input must be either unicode or encoded in utf8.")
 
     try:
         output = unidecode.unidecode(input)
     except UnicodeDecodeError:
-        raise UnicodeHandlerError('Transliteration failed, check input.')
+        raise UnicodeHandlerError("Transliteration failed, check input.")
 
     if not isinstance(input, test_type):
-        output = output.encode('utf-8')
+        output = output.encode("utf-8")
 
     return output
 
 
-def issn2bib(token=None, url=None, issn=None):
+def issn2info(token=None, url=None, issn=None, return_info="bibstem"):
+    """
+    Sends an ISSN to the JournalsDB API and returns the field specified by `return_info`
+    Default info to be returned is bibstem
+    """
     if issn and token and url:
         url_base = url + "/journals/issn/"
         request_url = url_base + issn
@@ -50,5 +57,5 @@ def issn2bib(token=None, url=None, issn=None):
         else:
             if req.status_code == 200:
                 result = req.json()
-                return result.get("issn", {}).get("bibstem", None)
+                return result.get("issn", {}).get(return_info, None)
     return
