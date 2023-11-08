@@ -174,7 +174,6 @@ class BibcodeGenerator(object):
                                 issn=issn,
                                 return_info="bibstem",
                             )
-
         if bibstem:
             return bibstem
         else:
@@ -265,6 +264,26 @@ class BibcodeGenerator(object):
                 if is_letter:
                     if not issue:
                         issue = is_letter
+
+            elif bibstem in ["zndo."]:
+                try:
+                    zenodo_pid = record.get("persistentIDs", {})
+                    zenodo_doi = None
+                    for d in zenodo_pid:
+                        if d.get("DOI", None):
+                            zenodo_doi = d.get("DOI")
+                    if zenodo_doi:
+                        zenodo_id = zenodo_doi.split("/")[-1].replace("zenodo.", "")
+                        pageid = zenodo_id[-4:].rjust(4, ".")
+                        zenodo_id = zenodo_id[0:-4]
+                        if zenodo_id:
+                            issue = zenodo_id[-1]
+                            zenodo_id = zenodo_id[0:-1]
+                        else:
+                            issue = "."
+                        volume = zenodo_id.rjust(4, ".")
+                except:
+                    pass
 
             elif bibstem in ["zndo."]:
                 try:
