@@ -4,6 +4,7 @@ import pdb
 from adsputils import load_config
 
 from adsenrich.bibcodes import BibcodeGenerator
+from adsenrich.data import *
 from adsenrich.exceptions import *
 from adsenrich.utils import issn2info
 
@@ -26,7 +27,7 @@ class ReferenceWriter(object):
         self.data = data
         self.reference_list = None
         self.reference_source = reference_source
-        self.refsource_dict = conf.get("REFSOURCE_DICT", {})
+        self.refsource_dict = REFSOURCE_DICT
         self.output_file = None
         if not token:
             token = conf.get("_API_TOKEN", None)
@@ -61,7 +62,6 @@ class ReferenceWriter(object):
             * volume (for the path)
             * data to make a bibcode if self.bibcode is None
         """
-
         try:
             if not self.basedir:
                 raise MissingPathException("You have not provided a valid destination directory.")
@@ -107,7 +107,6 @@ class ReferenceWriter(object):
             volume = self.data.get("publication", {}).get("volumeNum", "").rjust(4, "0")
             output_dir = self.basedir + bibstem + "/" + volume
             self.output_file = output_dir + "/" + self.bibcode + "." + file_ext
-            print(self.output_file)
 
         except Exception as err:
             pass
@@ -119,6 +118,7 @@ class ReferenceWriter(object):
             if not self.reference_list:
                 raise NoReferencesException("There are no references in this record.")
             self._create_output_file_name()
+
             if not self.output_file:
                 raise NoOutFileException("Missing output file name.")
 

@@ -40,17 +40,21 @@ class BibcodeGenerator(object):
             return integer
 
     def _get_author_init(self, record):
+        author_init = "."
         try:
-            author_init = record["authors"][0]["name"]["surname"]
-            author_init = author_init.strip()[0]
-            author_init = u2asc(author_init).upper()
-        except Exception as err:
-            author_init = "."
+            author_init = record.get("authors", [])[0]["name"]["surname"]
+            first_auth = record.get("authors", [])[0]
+            if first_auth:
+                author_init = first_auth.get("name", {}).get("surname", None)
+                author_init = author_init.strip()[0]
+                author_init = u2asc(author_init).upper()
+        except:
+            pass
         return author_init
 
     def _get_pubyear(self, record):
         try:
-            pub_year = record["publication"]["pubYear"]
+            pub_year = record.get("publication", {}).get("pubYear", None)
         except Exception as err:
             raise NoPubYearException(err)
         else:
@@ -58,7 +62,7 @@ class BibcodeGenerator(object):
 
     def _get_volume(self, record):
         try:
-            volume = record["publication"]["volumeNum"]
+            volume = record.get("publication", {}).get("volumeNum", None)
             if "-" in volume:
                 vol_list = volume.strip().split("-")
                 volume = vol_list[0]
@@ -68,7 +72,7 @@ class BibcodeGenerator(object):
 
     def _get_issue(self, record):
         try:
-            issue = str(record["publication"]["issueNum"])
+            issue = str(record.get("publication", {}).get("issueNum", None))
         except Exception as err:
             issue = None
         return issue
@@ -150,24 +154,27 @@ class BibcodeGenerator(object):
             return self.bibstem
         else:
             bibstem = None
-            try:
+            if not bibstem:
+                issn_publisher = record.get("publication", {}).get("publisher", None)
+                if issn_publisher == "Zenodo":
+                    bibstem = "zndo."
+            if not bibstem:
                 issn_rec = []
-                try:
-                    issn_rec = record["publication"]["ISSN"]
-                except Exception as err:
-                    pass
+                issn_rec = record.get("publication", {}).get("ISSN", None)
                 for i in issn_rec:
                     issn = i.get("issnString", None)
-                    try:
+                    if issn:
+                        issn = str(issn)
                         if len(issn) == 8:
                             issn = issn[0:4] + "-" + issn[4:]
-                    except Exception as err:
-                        pass
-                    if issn:
                         if not bibstem:
-                            bibstem = issn2info(token=self.api_token, url=self.api_url, issn=issn)
-            except Exception as err:
-                pass
+                            bibstem = issn2info(
+                                token=self.api_token,
+                                url=self.api_url,
+                                issn=issn,
+                                return_info="bibstem",
+                            )
+
         if bibstem:
             return bibstem
         else:
@@ -190,7 +197,7 @@ class BibcodeGenerator(object):
         try:
             author_init = self._get_author_init(record)
         except Exception as err:
-            author_init = ""
+            author_init = "."
         if not (year and bibstem):
             raise NoBibcodeException(
                 "You're missing year and or bibstem -- no bibcode can be made!"
@@ -258,6 +265,26 @@ class BibcodeGenerator(object):
                 if is_letter:
                     if not issue:
                         issue = is_letter
+
+            elif bibstem in ["zndo."]:
+                try:
+                    zenodo_pid = record.get("persistentIDs", {})
+                    zenodo_doi = None
+                    for d in zenodo_pid:
+                        if d.get("DOI", None):
+                            zenodo_doi = d.get("DOI")
+                    if zenodo_doi:
+                        zenodo_id = zenodo_doi.split("/")[-1].replace("zenodo.", "")
+                        pageid = zenodo_id[-4:].rjust(4, ".")
+                        zenodo_id = zenodo_id[0:-4]
+                        if zenodo_id:
+                            issue = zenodo_id[-1]
+                            zenodo_id = zenodo_id[0:-1]
+                        else:
+                            issue = "."
+                        volume = zenodo_id.rjust(4, ".")
+                except:
+                    pass
 
             else:
                 (pageid, is_letter) = self._get_normal_pagenum(record)
