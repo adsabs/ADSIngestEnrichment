@@ -1417,6 +1417,8 @@ IEEE_BIBSTEMS = [
     "ICAP.",
     "IPERv",
     "ICD..",
+    "CComm",
+    "ICLS.",
 ]
 IEEE_COL14_BIBSTEMS = [
     "IAEMS",
@@ -1486,7 +1488,9 @@ IEEE_SPECPAGE = [
     "OIJIM",
     "ISenL",
     "IMagL",
-    "ITQE."
+    "ITQE.",
+    "ICLS.",
+    "CComm",
 ]
 
 REFSOURCE_DICT = {
