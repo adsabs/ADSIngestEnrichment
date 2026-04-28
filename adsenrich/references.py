@@ -1,3 +1,4 @@
+import html
 import os
 
 from adsputils import load_config
@@ -9,6 +10,15 @@ from adsenrich.utils import issn2info
 
 proj_home = os.path.realpath(os.path.join(os.path.dirname(__file__), "../"))
 conf = load_config(proj_home=proj_home)
+
+def de_dash_entity(input_string):
+    output_string = input_string
+    dash_entities = ["&mdash;", "&ndash;", "&hyphen;", "&minus;", "&dash;", "&horbar;", "&x2010;", "&x2011;", "&x2012;", "&x2013;", "&x2014;", "&#8208;", "&#8209;", "&#8210;", "&#8211;", "&#8212;"]
+    unicode_entities = [html.unescape(x) for x in dash_entities]
+    dash_entities.extend(unicode_entities)
+    for d in dash_entities:
+        output_string = output_string.replace(d, "-")
+    return output_string
 
 
 class ReferenceWriter(object):
@@ -136,7 +146,20 @@ class ReferenceWriter(object):
             self._extract_refs_from_record()
             if not self.reference_list:
                 raise NoReferencesException("There are no references in this record.")
-            self._create_output_file_name()
+            if self.reference_source == "cr":
+                pids = self.data.get("persistentIDs", [])
+                doi = "no_doi_found"
+                for p in pids:
+                    if p.get("DOI", None):
+                        doi = p.get("DOI")
+                        doi = doi.replace("/", "_")
+                        newdoi = de_dash_entity(doi)
+                        bibstem = self.bibcode[4:9].rstrip(".")
+                        volume = self.data.get("publication", {}).get("volumeNum", "").rjust(4, "0")
+                        output_dir = self.basedir + bibstem + "/" + volume
+                        self.output_file = output_dir + "/" + newdoi + ".xref.xml"
+            else:
+                self._create_output_file_name()
 
             if not self.output_file:
                 raise NoOutFileException("Missing output file name.")
